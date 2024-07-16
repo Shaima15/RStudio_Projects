@@ -12,3 +12,11 @@
 
 **Skills:** · R studio · Predictive Analytics · Data Visualization · Data Cleaning
 
+**2- Customer Loyalty Prediction**
+
+This project strived to provide insights into the specific predictors that the organization should optimize to improve customer loyalty. The dataset included various marketing-related predictors such as customer satisfaction, and negative publicity. etc. which were cleaned and transformed before feeding it to the Multiple Linear Regression model. 
+
+Predictive accuracy was measured using 'Adjusted R-square ' and 'Mean Squared Error'.
+Finally, repeated K-fold cross-validation was conducted to determine the performance of the model on new data.
+
+**Skills:** · Predictive Analytics · Data Visualization · Data Transformation · Data Cleaning
