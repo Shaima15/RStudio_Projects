@@ -4,7 +4,9 @@
 
 **1- Predicting Chickenpox cases**
 
-**Objective:** This project cleaned, transformed, and applied various predictive models on the chickenpox dataset to predict an outbreak or simply future cases. 
+**Objective:** This project cleaned, transformed, and applied various predictive models on the chickenpox dataset to predict an outbreak or simply future cases. Several candidate models were trained and tested, then two promising models were selected based on forecasting accuarcy metrics. Those two models, namely ARIMA and Holt Winters model, were tuned and tested. Finally, using forecasting accuracy metrics, ARIMA was selected as the best model
+
+Candidate models: Holt-Winter model, ARIMA, TBATS, and STL + ETS 
 
 **Goal:** These predictions allow hospitals and other healthcare institutions to devise effective strategies that can assist them in combating the impacts of the anticipated influx of cases, mitigating the significant clinical expenses caused by the disease.
 
