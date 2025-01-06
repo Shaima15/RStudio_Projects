@@ -1,0 +1,410 @@
+#European Bank Customer Churn Prediction 
+
+#set the working directory to the location where my dataset is stored
+setwd("C:/Users/shaim/Downloads/R datasets")
+
+#install necessary packages 
+install.packages("readxl")
+install.packages("ROCR")
+install.packages("rsample")
+install.packages("caret")
+install.packages("rpart.plot")
+install.packages('randomForest')
+install.packages('e1071')
+install.packages('tidyverse')
+install.packages('glmnet')
+install.packages('dplyr')
+install.packages("glmnet")
+
+#use readxl library to read the dataset
+library(readxl)
+churn = read_excel('Churn_new_outlier.xlsx')
+
+#convert the exited column to a factor to allow for further analysis 
+churn$Exited <- factor(churn$Exited, levels =c(1,0))
+
+#check class distribution 
+class_dist <- table(churn$Exited) 
+
+#Use caret library to over sample the minority class to create
+#a balanced data set 
+
+library(caret)
+churn_oversamp <- upSample(churn, churn$Exited)
+
+#The oversampling method above created a column called 'class' that is the 
+#same as the 'Exited' class, so the latter will be removed and class will be
+#renamed to 'Exited'
+
+churn_oversamp <- upSample(churn[, -10], churn$Exited, yname = "Exited")
+
+#check the distribution of the class after oversampling 
+
+table(churn_oversamp$Exited) 
+
+#Perform stratified sampling using initial_split where 80% of data is used for
+#training and 20% is used for testing
+
+library(rsample)
+
+strata_sample <- initial_split(churn_oversamp, prop = 0.80, strata = Exited) 
+
+#access the training set and store it in a variable
+
+strata_train <- training(strata_sample)
+
+#access the testing set and store it in a variable
+
+strata_test <- testing(strata_sample)
+
+################Model 1- Decision tree ######################
+
+###train the model using the training set 
+
+#set the seed to a specific number to ensure that the model shows same result 
+#whenever we run it
+
+set.seed(123)
+
+#Use repart library to train the model on the training set
+
+library(rpart)
+
+Dtree_model <- rpart(Exited ~ ., data = strata_train, method = "class")
+
+print(Dtree_model)
+
+#Use prp to plot the decision tree model to show the results
+
+library(rpart.plot)
+
+prp(Dtree_model,
+    faclen=0, #This ensures that full names are used for factor labels
+    extra=1, #This shows number of observations for each terminal node
+    roundint=T) #This rounds the results to integers
+
+# To prune the tree, the below line will identify the best complexity parameter
+#value to use. The goal is to find a cp value that will reduce xerror i.e.
+#cross-validated error
+
+best_cp <- Dtree_model$cptable[which.min(Dtree_model$cptable[,"xerror"])
+                                     ,"CP"]
+
+#This line will provide a pruned tree based on the best cp value
+Dtree_prune <- prune(Dtree_model, cp=best_cp)
+
+print(Dtree_prune)
+
+#plot the pruned tree
+prp(Dtree_prune,
+    faclen=0, 
+    extra=1, 
+    roundint=T) 
+
+#checks important variables when predicting the response variable 
+print(Dtree_prune$variable.importance)
+
+#Use the model to predict on test set
+Dtree_test_pred <-predict(Dtree_prune, strata_test, type = 'class')
+
+#check model performance on Test set using confusion matrix 
+Dtree_confmatrix <- confusionMatrix(strata_test$Exited, Dtree_test_pred)
+
+print(Dtree_confmatrix)
+
+#Assess model performance 
+
+#Extract precision and recall from confusion matrix to calculate
+#F1 scores
+
+recall_dtree <- Dtree_confmatrix$byClass["Sensitivity"] 
+precision_dtree <- Dtree_confmatrix$byClass["Pos Pred Value"]  
+
+#creates a function that takes precision and recall as arguments to 
+#calculate F1 scores. The function calculates it using its respective formula,
+#but it won't calculate it if the sum of precision and recall is equal to 0
+#in order to avoid division by 0
+
+f1_calc <- function(precision, recall) {
+  if (precision + recall ==0) {
+    return (0)
+  } 
+  return(2*(precision * recall)/(precision + recall))
+}
+
+F1_dtree <- f1_calc(precision_dtree,recall_dtree) 
+
+#Kfold cross validation (cv)
+
+#The below uses trainControl function to set the required parameter values to 
+#perform cross validation. Here, I am performing 10 fold cross validation
+
+Dtree_fitcontrol <- trainControl(method = "cv", number= 10)
+
+#Uses the set parameters to train the model using the training set
+
+Dtree_Fit_cv <-train(Exited ~ ., data=strata_train, 
+                  method= "rpart", 
+                  trControl = Dtree_fitcontrol)
+
+
+#Now predict on the Testing set  
+
+Dtree_pred_cv = predict(Dtree_Fit_cv, newdata = strata_test) 
+
+#Check the model's confusion matrix
+Dtree_confmatrix_cv = confusionMatrix(table(strata_test[, 12], Dtree_pred_cv)) 
+
+print(Dtree_confmatrix_cv)
+
+#retrieve recall, precision, and calculate F1 scores 
+
+recall_dtree_cv <- Dtree_confmatrix_cv$byClass["Sensitivity"] 
+precision_dtree_cv <- Dtree_confmatrix_cv$byClass["Pos Pred Value"]  
+
+F1_dtree_cv <- f1_calc(precision_dtree_cv,recall_dtree_cv) 
+
+################Model 2- Random forest ##########################
+
+set.seed(20)
+
+library(randomForest)
+
+#The importance has been set to true to show which predictors are crucial
+#for determining Exited i.e response variable. ntree is the number of trees. 
+
+rforest_model<- randomForest(Exited ~ ., ntree = 350, data = strata_train,
+                             importance = TRUE)
+
+#check the result of the model 
+
+print(rforest_model)
+
+#plot the random tree result 
+
+plot(rforest_model, main = "Random forest model results")
+
+#Tune the Random forest model.  
+#The above model used 3 variables at each split 
+#The below line finds the optimal number of variables 
+
+#step factor of 2 wil increment the value of variables to try by 2 each time
+
+tuneRF(strata_train[,c(1:11)], strata_train$Exited, stepfactor =2) 
+
+#build a tuned random forest model 
+# the below uses 350 trees and uses 6 variables at each split 
+
+rf_tuned_model <- randomForest(Exited ~ ., ntree=350, mtry = 6, data = strata_train)
+
+#make predictions on test set
+
+rf_tuned_pred <-predict(rf_tuned_model, strata_test, type = 'class')
+
+#check model performance using confusion matrix 
+
+rf_tuned_confmatrix <- confusionMatrix(strata_test$Exited, rf_tuned_pred)
+
+print(rf_tuned_confmatrix)
+
+#Assess model performance 
+
+#Retrieve precision and recall from confusion matrix to calculate
+#F1 scores
+
+recall_rf <- rf_tuned_confmatrix$byClass["Sensitivity"] 
+precision_rf<- rf_tuned_confmatrix$byClass["Pos Pred Value"]  
+F1_score_rf <- f1_calc(precision_rf,recall_rf) 
+
+#check the important variables
+
+varImpPlot(rf_tuned_model, main = 'Variable importance plot')
+
+################Model 3- Logistic Regression ######################
+
+set.seed(33)
+
+# Feature Scaling excluding the response variable and binary predictors
+strata_train[-c(2,7,8,10,11,12)] = scale(strata_train[-c(2,7,8,10,11,12)]) 
+strata_test[-c(2,7,8,10,11,12)]= scale(strata_test[-c(2,7,8,10,11,12)])
+
+#fit the model on training set 
+logistic_model <- glm(Exited~ ., family="binomial", data=strata_train)
+
+#provides summary information on how the model performs on training set
+summary(logistic_model)
+
+#the below provides the odds ratio
+lm_odds_ratio <- exp(coef(logistic_model))
+
+print(lm_odds_ratio)
+
+#shows important variables for predicting churn
+varImp(logistic_model)
+
+#predict the class on test data 
+
+# Since the type is equal to response, it predicts probabilities 
+
+logistic_pred_test = predict(logistic_model, newdata=strata_test, type="response")
+
+# Change the probabilities to binary results to use confusion matrix
+logistic_pred_bin <- ifelse(logistic_pred_test >0.5, 1, 0)
+
+#the below calculates the accuracy of the model on the test set
+
+lm_pred_accuracy <- mean(logistic_pred_bin == strata_test$Exited )
+
+# Evaluate model using confusion matrix
+
+logistic_confmatrix <- table(strata_test$Exited, logistic_pred_bin)
+
+print(logistic_confmatrix)
+
+# Use ROCR library to create an ROC-AUC Curve
+
+#calculate the auc value 
+library(ROCR)
+
+ROCPred <- prediction(logistic_pred_bin, strata_test$Exited)
+ROCPerf <- performance(ROCPred, measure = "tpr",
+                      x.measure = "fpr")
+
+auc <- performance(ROCPred, measure = "auc")
+auc <- auc@y.values[[1]]
+
+# Plot the curve
+plot(ROCPer)
+plot(ROCPer, colorize = TRUE,
+     print.cutoffs.at = seq(0.1, by = 0.1),
+     main = "Logistic regression - ROC CURVE")
+abline(a = 0, b = 1)
+
+auc <- round(auc, 4) 
+legend(.1, .9, auc, title = "AUC", cex = 1) 
+
+#use step wise selection to improve model performance 
+
+library(dplyr)
+library(MASS)
+
+logistic_model <- glm(Exited~ ., family="binomial", data=strata_train)
+
+#create a combined stepwise selection using the trained logistic regression model 
+
+logist_stepwise <- step(logistic_model, direction= "both", trace= TRUE)
+
+summary(logist_stepwise)
+
+#now use that model and predict on training set
+
+logist_stepwise_pred <- predict(logist_stepwise, strata_test, type="response")
+
+# Change the probabilities to binary results to use confusion matrix
+
+log_stepwise_pred_bin <- ifelse(logist_stepwise_pred >0.5, 1, 0)
+
+# Evaluate model using confusion matrix
+
+logist_stepwise_confmat <- table(strata_test$Exited, log_stepwise_pred_bin)
+
+print(logist_stepwise_confmat)
+
+#check accuracy of the model when predicting on test set
+logist_stepwise_acc <- mean(log_stepwise_pred_bin == strata_test$Exited )
+
+print(logist_stepwise_acc)
+
+#use K fold cross validation for resampling and achieving reliable model
+#use train control function to specify the resample method and parameter values
+
+fitcontrol_lm <- trainControl(method = "cv", number= 10)
+
+logist_cv <-train(Exited ~ ., data=strata_train, 
+                    method= "glm", family ="binomial", 
+                    trControl = fitcontrol_lm)
+
+#Predicting on the Test set  
+logist_cv_pred = predict(logist_cv, newdata = strata_test) 
+
+#Check confusion matrix
+logist_cv_confmatrix <- confusionMatrix(table(strata_test$Exited, logist_cv_pred)) 
+print(logist_cv_confmatrix)
+
+#Assess model performance 
+
+#Extract precision and recall from confusion matrix and calculate
+#F1 scores
+
+#Note:The sensitivity/recall is extracted from 'byclass' which contains
+#specific metrics for each class 
+
+recall_logist<- logist_cv_confmatrix$byClass["Sensitivity"] 
+precision_logist<- logist_cv_confmatrix$byClass["Pos Pred Value"]  
+F1_score_logist <- f1_calc(precision_logist, recall_logist)
+
+#cross validation improved the model significantly
+
+################Model 4- Support vector machine ######################
+
+# Fitting Support vector machine model to the training set 
+library(e1071) 
+
+set.seed(23)
+
+#build a svm model with linear kernel 
+svm_linear = svm(formula = Exited ~ ., 
+                 data = strata_train, 
+                 type = 'C-classification', 
+                 kernel = 'linear') 
+
+
+summary(svm_linear)
+
+#extract coefficients to examine feature importance and check predictor
+#performance
+
+svm_linear_coef <- coef(svm_linear)
+
+print(svm_linear_coef)
+
+# Predicting the Test set results 
+svm_pred_linear = predict(svm_linear, newdata = strata_test) 
+
+#Check confusion matrix
+svm_linear_confmatrix = confusionMatrix(table(strata_test[, 12], svm_pred_linear)) 
+
+print(svm_linear_confmatrix)
+
+#performance metric
+
+recall_svm <- svm_linear_confmatrix$byClass["Sensitivity"] 
+precision_svm <- svm_linear_confmatrix$byClass["Pos Pred Value"]  
+F1_score_svm <- f1_calc(precision_svm, recall_svm)
+
+#try polynomial kernel 
+
+svm_ploy = svm(formula = Exited ~ ., 
+               data = strata_train, 
+               type = 'C-classification', 
+               kernel = 'polynomial') 
+
+# Predicting on the Test set 
+svm_pred_poly = predict(svm_ploy, newdata = strata_test) 
+
+#Check confusion matrix
+svm_poly_confmatrix = confusionMatrix(table(strata_test[, 12], svm_pred_poly)) 
+
+print(svm_poly_confmatrix)
+
+#Assess model performance 
+
+#Extract precision, recall from confusion matrix and calculate
+#F1 scores
+
+#polynomial kernel
+recall_svm_poly<- svm_poly_confmatrix$byClass["Sensitivity"]  
+precision_svm_poly<- svm_poly_confmatrix$byClass["Pos Pred Value"]  
+F1_score_svm_poly <- f1_calc(precision_svm_poly, recall_svm_poly)
+
+#######################################################################################
