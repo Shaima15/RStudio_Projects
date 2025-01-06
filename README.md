@@ -61,4 +61,6 @@ Utilized Excel’s Solver and Solver Table to perform sensitivity analysis, mini
 
 **Skills:** · Predictive Analytics · Prescriptive Analytics · Descriptive Analytics · Data Transformation
 
+[Presentation Video](https://youtu.be/xtSQlXvSjfw)
+
 
