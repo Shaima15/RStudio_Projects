@@ -215,7 +215,7 @@ g_count_v[guitar_v] <- 1
 plot(
   g_count_v,
   main = "Dispersion Plot of 'guitar' in reviews",
-  xlab = "Novel Time",
+  xlab = "Review Sequence",
   ylab = "guitar",
   type = "h",
   ylim = c(0, 1), yaxt = 'n'
@@ -231,7 +231,7 @@ m_count_v[music_v] <- 1
 plot(
   m_count_v,
   main = "Dispersion Plot of 'music' in reviews",
-  xlab = "Novel Time",
+  xlab = "Review Sequence",
   ylab = "music",
   type = "h",
   ylim = c(0, 1), yaxt = 'n'
