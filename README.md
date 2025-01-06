@@ -22,3 +22,28 @@ Predictive accuracy was measured using 'Adjusted R-square ' and 'Mean Squared Er
 Finally, repeated K-fold cross-validation was conducted to determine the performance of the model on new data.
 
 **Skills:** · Predictive Analytics · Data Visualization · Data Transformation · Data Cleaning
+
+**3- Amazon Musical Instruments Reviews NLP project**
+
+The purpose of this project is to do topic modeling on the reviewText variable of Amazon’s musical instruments review data. This technique can allow Amazon to understand the different topics that the customers discussed in the reviews. Once topics are identified, the store can discover reviews that contain community guidelines violating keywords which can be removed to enhance customer experience. 
+
+Data preparation and transformation techniques: 
+- 7 missing rows were removed, LDA algorithm cannot function well with missing rows 
+- Each review tokenized to single words by removing commas, periods, and symbols, to facilitate analysis 
+- Each token standardized by being converted to lowercase, prevents case differences from impacting the analysis 
+- Removed stopwords from the reviews 
+- Numbers removed since initial results showed random numbers as heavily weighted
+- Applied lemmatization as initial word cloud results showed words like guitar, guitars, string, and strings as heavily weighted
+
+Selected parameters: 
+- Chuck size = 10, reviews are generally short 
+- Training iterations = 300, shows optimal results and avoids overfitting 
+- Topics = 3, shows distinct themes    
+
+Conclusion: 
+- Guitar is the most frequent topic and token
+- Word cloud showed that customers believe the instruments are of good quality, highlighting positive sentiment in general
+- Reviews include the presence of community violating key terms. Hence, contextual analysis is required before removal
+- Major topics: Guitars, Instrument’s sound-related topics, and instrument’s quality- related topics
+
+**Skills:** · Natural Language Processing · Data Visualization · Data Transformation · Data Cleaning 
