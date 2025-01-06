@@ -47,3 +47,18 @@ Conclusion:
 - Major topics: Guitars, Instrument’s sound-related topics, and instrument’s quality- related topics
 
 **Skills:** · Natural Language Processing · Data Visualization · Data Transformation · Data Cleaning 
+
+**4- Bank Customer Churn Analysis**
+
+--Descriptive Analytics
+Performed exploratory data analysis and cleaned a dataset with 10,001 customers, checked missing values and assessed whether to retain or remove outliers. Conducted data transformations to prepare the dataset for classification and used various correlation analysis methods (point biserial, phi, and Pearson’s) to identify relationships between variables.
+
+--Predictive Analytics
+Handled class imbalance by using oversampling, built and evaluated predictive models, including Logistic Regression, SVM, Decision Trees, and Random Forests. Scaled the data for Logistic Regression and SVM and assessed model performance using recall, F1-score, and accuracy metrics. Random Forest had the highest accuracy of approximately 94%, but I selected Logistic Regression with an accuracy of approximately 71% for its balance between complexity and interpretability, enabling actionable insights into the factors influencing customer churn.
+
+--Prescriptive Analytics
+Utilized Excel’s Solver and Solver Table to perform sensitivity analysis, minimizing churn by optimizing controllable decision variables while holding constants at median values. Then I proposed targeted marketing strategies based on model predictions and optimization results to enhance retention.
+
+**Skills:** · Predictive Analytics · Prescriptive Analytics · Descriptive Analytics · Data Transformation
+
+
